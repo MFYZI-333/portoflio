@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="300" height="300">
+  <defs>
+    <radialGradient id="nebula3" cx="60%" cy="40%" r="65%">
+      <stop offset="0%" stop-color="#00ffcc" stop-opacity="0.9"/>
+      <stop offset="35%" stop-color="#0284c7" stop-opacity="0.8"/>
+      <stop offset="70%" stop-color="#091b33" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#010710" stop-opacity="1"/>
+    </radialGradient>
+    <filter id="cyanGlow">
+      <feGaussianBlur stdDeviation="4" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="300" height="300" fill="#010710"/>
+  <circle cx="150" cy="150" r="140" fill="url(#nebula3)"/>
+  <!-- Orbiting Cosmic Rings -->
+  <ellipse cx="150" cy="150" rx="125" ry="55" fill="none" stroke="#00ffcc" stroke-width="1.5" stroke-dasharray="8,6" transform="rotate(-28 150 150)" opacity="0.7" filter="url(#cyanGlow)"/>
+  <ellipse cx="150" cy="150" rx="90" ry="38" fill="none" stroke="#ffffff" stroke-width="1" transform="rotate(35 150 150)" opacity="0.5"/>
+  <circle cx="150" cy="150" r="28" fill="#051424" stroke="#00ffcc" stroke-width="2"/>
+  <polygon points="146,140 158,150 146,160" fill="#00ffcc"/>
+  <circle cx="65" cy="115" r="5" fill="#00ffcc" filter="url(#cyanGlow)"/>
+  <circle cx="235" cy="185" r="4" fill="#ffffff"/>
+</svg>

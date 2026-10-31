@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="300" height="300">
+  <defs>
+    <radialGradient id="nebula2" cx="40%" cy="40%" r="70%">
+      <stop offset="0%" stop-color="#ff0055" stop-opacity="0.8"/>
+      <stop offset="45%" stop-color="#3b0764" stop-opacity="0.85"/>
+      <stop offset="85%" stop-color="#0a0314" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#020108" stop-opacity="1"/>
+    </radialGradient>
+    <filter id="glowRed">
+      <feGaussianBlur stdDeviation="5" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="300" height="300" fill="#020108"/>
+  <circle cx="150" cy="150" r="140" fill="url(#nebula2)"/>
+  <!-- Spider-Web Constellation Pattern -->
+  <g stroke="#ff0055" stroke-width="0.8" opacity="0.6">
+    <line x1="150" y1="150" x2="30" y2="40"/>
+    <line x1="150" y1="150" x2="270" y2="40"/>
+    <line x1="150" y1="150" x2="270" y2="260"/>
+    <line x1="150" y1="150" x2="30" y2="260"/>
+    <line x1="150" y1="150" x2="150" y2="10"/>
+    <line x1="150" y1="150" x2="150" y2="290"/>
+    <!-- Web Rings -->
+    <polygon points="150,70 215,85 240,150 215,215 150,230 85,215 60,150 85,85" fill="none"/>
+    <polygon points="150,110 185,115 200,150 185,185 150,190 115,185 100,150 115,115" fill="none"/>
+  </g>
+  <circle cx="150" cy="150" r="26" fill="#150518" stroke="#ff0055" stroke-width="2" filter="url(#glowRed)"/>
+  <polygon points="146,140 158,150 146,160" fill="#ff0055"/>
+</svg>

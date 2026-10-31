@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="300" height="300">
+  <defs>
+    <radialGradient id="nebula1" cx="50%" cy="50%" r="60%">
+      <stop offset="0%" stop-color="#00f5ff" stop-opacity="0.9"/>
+      <stop offset="40%" stop-color="#0033aa" stop-opacity="0.8"/>
+      <stop offset="80%" stop-color="#080c1e" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#02040a" stop-opacity="1"/>
+    </radialGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="4" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="300" height="300" fill="#02040a"/>
+  <circle cx="150" cy="150" r="140" fill="url(#nebula1)"/>
+  <!-- Vinyl Rings -->
+  <circle cx="150" cy="150" r="110" fill="none" stroke="#00f5ff" stroke-width="0.75" stroke-dasharray="3,5" opacity="0.5"/>
+  <circle cx="150" cy="150" r="85" fill="none" stroke="#ffffff" stroke-width="0.5" opacity="0.3"/>
+  <circle cx="150" cy="150" r="60" fill="none" stroke="#00d2ff" stroke-width="1" opacity="0.6"/>
+  <!-- Core -->
+  <circle cx="150" cy="150" r="30" fill="#050b14" stroke="#00f5ff" stroke-width="2" filter="url(#glow)"/>
+  <polygon points="146,140 158,150 146,160" fill="#00f5ff"/>
+  <!-- Constellation points -->
+  <circle cx="80" cy="90" r="2.5" fill="#ffffff" filter="url(#glow)"/>
+  <circle cx="210" cy="80" r="2" fill="#00f5ff"/>
+  <circle cx="230" cy="220" r="2.5" fill="#ffffff"/>
+  <circle cx="70" cy="200" r="2" fill="#00f5ff"/>
+  <path d="M80 90 L210 80 L230 220 L70 200 Z" fill="none" stroke="#00f5ff" stroke-width="0.5" stroke-dasharray="4,6" opacity="0.4"/>
+</svg>

@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="ar" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <title>MFYZI</title>
+  <meta name="description" content="Cinematic, futuristic, space-themed personal portfolio website featuring deep space visuals, interactive Spider-Man photo effects, and celestial soundscapes.">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' https://www.youtube.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://i.pinimg.com https://i.ytimg.com https://s.ytimg.com; media-src 'self' blob: https://v1.pinimg.com https://*.googlevideo.com; connect-src 'self' https://www.youtube.com https://*.youtube.com; frame-src https://assets.pinterest.com https://www.youtube.com https://www.youtube-nocookie.com; form-action 'self'">
+
+  <!-- Core Stylesheet -->
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/anime-eyes.css">
+  <link rel="stylesheet" href="css/loader.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌌</text></svg>">
+</head>
+<body class="intro-active">
+
+  <!-- ========================================================================
+       1. SPACE LOADING SCREEN
+       Cinematic progress bar with stars, scanning line, and cosmic boot sequence
+       ======================================================================== -->
+  <div id="loader-overlay">
+
+    <!-- Stars canvas behind loader -->
+    <canvas id="loader-canvas"></canvas>
+
+    <!-- Center loading pod -->
+    <div class="loader-pod">
+
+      <!-- Top: small scanning line -->
+      <div class="loader-scan-line"></div>
+
+      <!-- Logo / Title -->
+      <div class="loader-logo">
+        <span class="loader-logo-bracket">[</span>
+        <span class="loader-logo-text">MFYZI</span>
+        <span class="loader-logo-bracket">]</span>
+      </div>
+
+      <!-- Boot sequence text lines -->
+      <div class="loader-boot-lines" id="loader-boot-lines">
+        <p class="boot-line" data-delay="0">INITIALIZING DEEP SPACE ENGINE...</p>
+        <p class="boot-line" data-delay="400">LOADING STELLAR COORDINATES...</p>
+        <p class="boot-line" data-delay="800">CALIBRATING COSMIC FREQUENCIES...</p>
+        <p class="boot-line" data-delay="1200">ESTABLISHING NEURAL LINK...</p>
+        <p class="boot-line" data-delay="1600">PORTFOLIO ONLINE ✓</p>
+      </div>
+
+      <!-- Progress Bar -->
+      <div class="loader-bar-wrap">
+        <div class="loader-bar-track">
+          <div class="loader-bar-fill" id="loader-bar-fill"></div>
+          <div class="loader-bar-glow" id="loader-bar-glow"></div>
+        </div>
+        <div class="loader-bar-labels">
+          <span class="loader-pct" id="loader-pct">0%</span>
+          <span class="loader-status" id="loader-status">LOADING</span>
+        </div>
+      </div>
+
+      <!-- Bottom: coordinates -->
+      <div class="loader-coords">
+        <span>LAT 23.4°N</span>
+        <span class="loader-dot">◆</span>
+        <span>LON 58.5°E</span>
+        <span class="loader-dot">◆</span>
+        <span>ORBIT 2026</span>
+      </div>
+
+    </div><!-- /.loader-pod -->
+
+    <!-- Skip button -->
+    <button id="loader-skip-btn" class="loader-skip-btn">SKIP ▶▶</button>
+
+  </div><!-- /#loader-overlay -->
+
+  <!-- ========================================================================
+       PERSISTENT DEEP SPACE BACKGROUND CANVAS
+       Runs 60FPS continuously across all sections with dynamic stars,
+       nebulas, galaxies, meteors, lightning, and parallax.
+       ======================================================================== -->
+  <canvas id="space-canvas"></canvas>
+
+  <!-- ========================================================================
+       FLOATING COSMIC NAVIGATION (Glassmorphism Capsule)
+       ======================================================================== -->
+  <header class="main-nav-container">
+    <nav class="main-nav-capsule" id="main-nav">
+      <!-- Cosmic Brand Emblem -->
+      <a href="#hero" class="nav-brand">
+        <span class="nav-brand-dot"></span>
+        <span>PORTFOLIO</span>
+      </a>
+
+      <!-- Navigation Links -->
+      <ul class="nav-links-list">
+        <span class="nav-active-pill"></span>
+        <li><a href="#hero" class="nav-link active">HOME</a></li>
+        <li><a href="#about" class="nav-link">ABOUT</a></li>
+        <li><a href="#interests" class="nav-link">INTERESTS</a></li>
+        <li><a href="#music" class="nav-link">MUSIC</a></li>
+        <li><a href="#socials" class="nav-link">SOCIALS</a></li>
+        <li><a href="#contact" class="nav-link">CONTACT</a></li>
+      </ul>
+
+      <!-- Ambient Sound FX Toggle -->
+      <button id="ambient-sound-toggle" class="nav-sound-btn" title="Toggle Cosmic Atmosphere Sound" aria-label="Toggle Cosmic Atmosphere">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M11 5L6 9H2v6h4l5 4V5z"></path>
+          <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+          <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+        </svg>
+      </button>
+
+      <!-- Mobile Hamburger -->
+      <button class="nav-mobile-toggle" id="nav-mobile-toggle" aria-label="Toggle Menu">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </nav>
+  </header>
+
+  <!-- Mobile Drawer Menu -->
+  <div class="nav-mobile-menu" id="nav-mobile-menu">
+    <a href="#hero" class="nav-link">HOME</a>
+    <a href="#about" class="nav-link">ABOUT</a>
+    <a href="#interests" class="nav-link">INTERESTS</a>
+    <a href="#music" class="nav-link">MUSIC</a>
+    <a href="#socials" class="nav-link">SOCIALS</a>
+    <a href="#contact" class="nav-link">CONTACT</a>
+  </div>
+
+  <!-- ========================================================================
+       MAIN SITE CONTENT
+       ======================================================================== -->
+  <main class="site-content">
+
+    <!-- --------------------------------------------------------------------
+         HERO SECTION: Personal Photo + Spider-Man Effect + Cosmic Presence
+         -------------------------------------------------------------------- -->
+    <section id="hero" class="hero-section">
+      <div class="hero-grid">
+        
+        <!-- Left: Cinematic Typography & Calling -->
+        <div class="hero-text-content">
+          <h1 class="hero-title">
+            HELLO, I AM
+            <span class="gradient-text">MFYZI</span>
+          </h1>
+
+          <p class="hero-subtitle">
+            Welcome to my personal universe. A frontier where deep space aesthetics, futuristic design, and boundless creative passion collide into reality.
+          </p>
+
+          <div class="hero-actions">
+            <a href="#about" class="cosmic-btn-primary">
+              <span>EXPLORE MY UNIVERSE</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <polyline points="12 5 19 12 12 19"></polyline>
+              </svg>
+            </a>
+
+            <a href="#contact" class="cosmic-btn-secondary">
+              <span>TRANSMIT SIGNAL</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
+            </a>
+          </div>
+        </div>
+
+        <!-- Right: My Photo with Spider-Man Holographic Effect & 3D Tilt -->
+        <div class="hero-photo-wrapper">
+          
+          <!-- Outer Rotating Cosmic Energy Rings -->
+          <div class="photo-energy-ring">
+            <svg viewBox="0 0 500 500">
+              <circle cx="250" cy="250" r="235" fill="none" stroke="#00f5ff" stroke-width="1.2" stroke-dasharray="14,18" opacity="0.45" />
+              <circle cx="250" cy="250" r="220" fill="none" stroke="#0066ff" stroke-width="1" stroke-dasharray="6,12" opacity="0.35" />
+              <circle cx="250" cy="250" r="242" fill="none" stroke="#ff0055" stroke-width="0.8" stroke-dasharray="2,16" opacity="0.3" />
+            </svg>
+          </div>
+
+          <!-- Interactive 3D Tilt Card -->
+          <div class="hero-photo-card" id="hero-photo-card">
+            
+            <!-- Tech Corner Brackets -->
+            <div class="photo-corner-tag photo-corner-tl"></div>
+            <div class="photo-corner-tag photo-corner-tr"></div>
+            <div class="photo-corner-tag photo-corner-bl"></div>
+            <div class="photo-corner-tag photo-corner-br"></div>
+
+            <!-- Animated Pinterest video embed -->
+            <iframe
+              src="https://assets.pinterest.com/ext/embed.html?id=1135681231051076081"
+              title="Animated Ghostface video from Pinterest"
+              class="hero-photo-pin-embed"
+              loading="eager"
+              allow="autoplay; encrypted-media; picture-in-picture"
+              allowfullscreen
+            ></iframe>
+
+            <!-- 2. Cyber-Glitch Slice Layer -->
+            <div class="photo-glitch-layer"></div>
+
+            <!-- 3. Vertical Laser Scan Beam -->
+            <div class="photo-scan-beam"></div>
+
+            <!-- Procedural Canvas for Dynamic Web Strands & Embers -->
+            <canvas class="photo-web-canvas"></canvas>
+
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- --------------------------------------------------------------------
+         ABOUT ME SECTION: Cinematic Storytelling & Cosmic Coordinates
+         -------------------------------------------------------------------- -->
+    <section id="about" class="about-section">
+      <div class="section-header reveal-on-scroll">
+        <span class="section-tag">TRANSMISSION 01 // IDENTITY</span>
+        <h2 class="section-title">ABOUT ME</h2>
+        <p class="section-desc">Crossing the horizon between thought, design, and code.</p>
+      </div>
+
+      <div class="about-grid reveal-on-scroll">
+        <!-- Visual Art Frame (Animated Media from Pinterest) -->
+        <div class="about-bio-frame about-visual-container">
+          <div class="about-image-wrapper">
+            <video 
+              src="assets/about-animated.mp4" 
+              poster="assets/about-animated-poster.jpg" 
+              autoplay 
+              loop 
+              muted 
+              playsinline 
+              class="about-visual-img"
+            >
+              <img src="assets/about-animated-poster.jpg" alt="Animated Cosmic Visual" class="about-visual-img">
+            </video>
+            <div class="about-visual-ambient-glow"></div>
+          </div>
+        </div>
+
+        <!-- Single Unified Identity & Coordinates Box -->
+        <div class="about-unified-card">
+          <div class="unified-header">
+            <div class="unified-title-wrap">
+              <span class="unified-badge">COSMIC RECORD</span>
+              <h3 class="unified-title">MFYZI</h3>
+            </div>
+            <div class="unified-status-indicator">
+              <span class="unified-pulse-dot"></span>
+              <span>ACTIVE</span>
+            </div>
+          </div>
+
+          <div class="unified-prayers" lang="ar" dir="rtl">
+            <p>اللهم ارزقني رزقًا واسعًا حلالًا طيبًا مباركًا فيه، وافتح لي أبواب فضلك ورحمتك، وبارك لي في وقتي وعملي، ووفقني لما تحب وترضى.</p>
+            <p>اللهم اجعل لي من كل ضيق مخرجًا، ومن كل هم فرجًا، وارزقني من حيث لا أحتسب، واغنني بفضلك عمّن سواك.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- --------------------------------------------------------------------
+         MY INTERESTS SECTION: Interactive Constellation Orbit Plates
+         -------------------------------------------------------------------- -->
+    <section id="interests" class="interests-section">
+      <div class="section-header reveal-on-scroll">
+        <span class="section-tag">CONSTELLATIONS // PASSIONS</span>
+        <h2 class="section-title">MY INTERESTS</h2>
+        <p class="section-desc">Worlds, phenomena, and disciplines that fuel my creative engine.</p>
+      </div>
+
+      <div class="interests-grid">
+        
+        <!-- Interest 1: Football & Ronaldo -->
+        <div class="interest-card reveal-on-scroll">
+          <span class="interest-number">01</span>
+          
+          <div class="interest-media-wrapper">
+            <video src="assets/interest-1.mp4" autoplay loop muted playsinline class="interest-video"></video>
+            <div class="interest-media-overlay"></div>
+          </div>
+
+          <div class="interest-content">
+            <div class="interest-header-row">
+              <div class="interest-icon-wrap">
+                <!-- Football / Soccer Ball Icon -->
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polygon points="12,2 14.5,8.5 12,10 9.5,8.5" fill="currentColor" opacity="0.7"></polygon>
+                  <polygon points="21.5,8 18,9.5 17,12 19,14" fill="currentColor" opacity="0.7"></polygon>
+                  <polygon points="18.5,19.5 15,17 14,14 17,13" fill="currentColor" opacity="0.7"></polygon>
+                  <polygon points="5.5,19.5 9,17 10,14 7,13" fill="currentColor" opacity="0.7"></polygon>
+                  <polygon points="2.5,8 7,9.5 7,12 5,14" fill="currentColor" opacity="0.7"></polygon>
+                  <circle cx="12" cy="12" r="3" fill="currentColor"></circle>
+                </svg>
+              </div>
+              <h3 class="interest-title">Football &amp; Ronaldo</h3>
+            </div>
+            <p class="interest-desc">
+              Passionate fan of the beautiful game, the GOAT Cristiano Ronaldo, and the electric energy of FIFA tournaments worldwide.
+            </p>
+          </div>
+        </div>
+
+        <!-- Interest 2: Late Night Coding -->
+        <div class="interest-card reveal-on-scroll">
+          <span class="interest-number">02</span>
+          
+          <div class="interest-media-wrapper">
+            <video src="assets/interest-2.mp4" autoplay loop muted playsinline class="interest-video"></video>
+            <div class="interest-media-overlay"></div>
+          </div>
+
+          <div class="interest-content">
+            <div class="interest-header-row">
+              <div class="interest-icon-wrap">
+                <!-- Code / Programming Icon -->
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="16 18 22 12 16 6"></polyline>
+                  <polyline points="8 6 2 12 8 18"></polyline>
+                  <line x1="14" y1="4" x2="10" y2="20"></line>
+                </svg>
+              </div>
+              <h3 class="interest-title">Late Night Coding</h3>
+            </div>
+            <p class="interest-desc">
+              The art of building worlds from logic — writing code late into the night, solving complex problems, and shipping elegant solutions.
+            </p>
+          </div>
+        </div>
+
+        <!-- Interest 3: Anime & Naruto -->
+        <div class="interest-card anime-card reveal-on-scroll">
+          <span class="interest-number">03</span>
+          
+          <div class="interest-media-wrapper">
+            <video src="assets/interest-3.mp4" autoplay loop muted playsinline class="interest-video"></video>
+            <div class="interest-media-overlay"></div>
+            <!-- Naruto Sharingan/Rinnegan hover overlay -->
+            <div class="anime-eye-overlay">
+              <img src="assets/naruto-eyes.gif" alt="Sharingan Rinnegan" class="anime-eyes-img">
+            </div>
+          </div>
+
+          <div class="interest-content">
+            <div class="interest-header-row">
+              <div class="interest-icon-wrap">
+                <!-- Anime / Eye / Sharingan-inspired Icon -->
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                  <circle cx="12" cy="12" r="1.2" fill="currentColor"></circle>
+                  <!-- Sharingan tomoe hint -->
+                  <circle cx="12" cy="9" r="0.6" fill="currentColor" opacity="0.8"></circle>
+                  <circle cx="14.6" cy="13.5" r="0.6" fill="currentColor" opacity="0.8"></circle>
+                  <circle cx="9.4" cy="13.5" r="0.6" fill="currentColor" opacity="0.8"></circle>
+                </svg>
+              </div>
+              <h3 class="interest-title">Attack &amp; Naruto</h3>
+            </div>
+            <p class="interest-desc">
+              Captivated by the raw emotion, epic storytelling, and legendary battles of Naruto — from Sharingan to Rinnegan, every arc hits different.
+            </p>
+          </div>
+        </div>
+
+        <!-- Interest 4: Gaming & Call of Duty -->
+        <div class="interest-card reveal-on-scroll">
+          <span class="interest-number">04</span>
+          
+          <div class="interest-media-wrapper">
+            <video src="assets/interest-4.mp4" autoplay loop muted playsinline class="interest-video"></video>
+            <div class="interest-media-overlay"></div>
+          </div>
+
+          <div class="interest-content">
+            <div class="interest-header-row">
+              <div class="interest-icon-wrap">
+                <!-- Gamepad Icon -->
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <rect x="2" y="6" width="20" height="12" rx="5"></rect>
+                  <line x1="6" y1="12" x2="10" y2="12"></line>
+                  <line x1="8" y1="10" x2="8" y2="14"></line>
+                  <circle cx="16" cy="10" r="1" fill="currentColor"></circle>
+                  <circle cx="18" cy="12" r="1" fill="currentColor"></circle>
+                  <circle cx="14" cy="12" r="1" fill="currentColor"></circle>
+                  <circle cx="16" cy="14" r="1" fill="currentColor"></circle>
+                </svg>
+              </div>
+              <h3 class="interest-title">Free Fire</h3>
+            </div>
+            <p class="interest-desc">
+              Immersed in high-octane FPS combat, tactical warfare, and the thrill of competitive gaming through Call of Duty and beyond.
+            </p>
+          </div>
+        </div>
+
+        <!-- Interest 5: 365Days Movie -->
+        <div class="interest-card reveal-on-scroll">
+          <span class="interest-number">05</span>
+          
+          <div class="interest-media-wrapper">
+            <video src="assets/interest-5.mp4" autoplay loop muted playsinline class="interest-video"></video>
+            <div class="interest-media-overlay"></div>
+          </div>
+
+          <div class="interest-content">
+            <div class="interest-header-row">
+              <div class="interest-icon-wrap">
+                <!-- Film / Cinema Icon -->
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                  <line x1="7" y1="4" x2="7" y2="20"></line>
+                  <line x1="17" y1="4" x2="17" y2="20"></line>
+                  <line x1="2" y1="9" x2="7" y2="9"></line>
+                  <line x1="17" y1="9" x2="22" y2="9"></line>
+                  <line x1="2" y1="15" x2="7" y2="15"></line>
+                  <line x1="17" y1="15" x2="22" y2="15"></line>
+                  <!-- Play triangle -->
+                  <polygon points="10,9 10,15 15,12" fill="currentColor" opacity="0.6"></polygon>
+                </svg>
+              </div>
+              <h3 class="interest-title">365Days Movie</h3>
+            </div>
+            <p class="interest-desc">
+              Drawn to the dark, moody cinematography and iconic character styles of prestige TV series and cinematic masterpieces.
+            </p>
+          </div>
+        </div>
+
+        <!-- Interest 6: Space & Adventure -->
+        <div class="interest-card reveal-on-scroll">
+          <span class="interest-number">06</span>
+          
+          <div class="interest-media-wrapper">
+            <video src="assets/interest-6.mp4" autoplay loop muted playsinline class="interest-video"></video>
+            <div class="interest-media-overlay"></div>
+          </div>
+
+          <div class="interest-content">
+            <div class="interest-header-row">
+              <div class="interest-icon-wrap">
+                <!-- Astronaut / Rocket / Space Icon -->
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <path d="M12 2C12 2 7 6 7 13l2 2 1-1 2 2 2-2 1 1 2-2c0-7-5-11-5-11z"></path>
+                  <circle cx="12" cy="10" r="2"></circle>
+                  <path d="M7 15l-2 3 3-1"></path>
+                  <path d="M17 15l2 3-3-1"></path>
+                  <line x1="12" y1="17" x2="12" y2="22"></line>
+                </svg>
+              </div>
+              <h3 class="interest-title">Among Us</h3>
+            </div>
+            <p class="interest-desc">
+              Exploring the cosmos through gaming, animation, and sci-fi worlds — where space is not the limit, it's just the beginning.
+            </p>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- --------------------------------------------------------------------
+         MY MUSIC SECTION: Compact & Ultra-Premium Celestial Sound Module
+         -------------------------------------------------------------------- -->
+    <section id="music" class="music-section">
+      <div class="section-header reveal-on-scroll">
+        <span class="section-tag">HARMONICS // FREQUENCIES</span>
+        <h2 class="section-title">MY MUSIC</h2>
+        <p class="section-desc">Atmospheric soundscapes curated for deep focus and interstellar voyages.</p>
+      </div>
+
+      <div class="music-wrapper reveal-on-scroll">
+        <div class="music-player-pod" id="music-player-pod">
+          
+          <!-- Top Row: Vinyl Disc Art & Track Metadata -->
+          <div class="music-top-row">
+            
+            <!-- Rotating Holographic Vinyl Cover -->
+            <div class="music-vinyl-container">
+              <img 
+                src="assets/album1.svg" 
+                alt="Track Cover" 
+                class="music-album-art" 
+                id="music-album-art"
+              >
+            </div>
+
+            <!-- Track Info & Visualizer -->
+            <div class="music-info-col">
+              <span class="music-tag">NOW PLAYING</span>
+              <h3 class="music-track-title" id="music-track-title">it's 3am, you need sleep.</h3>
+              <p class="music-track-artist" id="music-track-artist">she's gone</p>
+              <iframe
+                class="music-youtube-player"
+                id="yt-track-player"
+                src="https://www.youtube.com/embed/jDczYMUgCm0?enablejsapi=1&amp;controls=1&amp;playsinline=1&amp;rel=0&amp;autoplay=1&amp;mute=1"
+                title="it's 3am, you need sleep."
+                allow="autoplay; encrypted-media; picture-in-picture"
+                referrerpolicy="strict-origin-when-cross-origin"
+                allowfullscreen
+              ></iframe>
+              <p class="music-playback-error" id="music-playback-error" role="status" hidden></p>
+              <a class="music-youtube-fallback" id="music-youtube-fallback" href="https://youtu.be/jDczYMUgCm0" target="_blank" rel="noopener noreferrer" hidden>فتح الأغنية على YouTube</a>
+
+              <!-- Live Real-Time Canvas Audio Frequency Visualizer -->
+              <div class="music-visualizer-wrap">
+                <canvas id="music-visualizer-canvas"></canvas>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Progress Bar & Timestamps -->
+          <div class="music-progress-wrapper">
+            <div class="music-progress-bar" id="music-progress-bar">
+              <div class="music-progress-fill" id="music-progress-fill"></div>
+            </div>
+            <div class="music-timestamps">
+              <span id="music-time-current">00:00</span>
+              <span id="music-time-total">00:00</span>
+            </div>
+          </div>
+
+          <!-- Controls: Prev, Play/Pause, Next, Volume -->
+          <div class="music-controls-row">
+            
+            <div class="music-nav-btns">
+              <button class="music-icon-btn" id="music-prev-btn" aria-label="Previous Track">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                  <polygon points="19,20 9,12 19,4"></polygon>
+                  <line x1="5" y1="4" x2="5" y2="20" stroke="currentColor" stroke-width="2.5"></line>
+                </svg>
+              </button>
+
+              <button class="music-play-btn" id="music-play-btn" aria-label="Play or Pause Track">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                  <polygon points="6,4 20,12 6,20"></polygon>
+                </svg>
+              </button>
+
+              <button class="music-icon-btn" id="music-next-btn" aria-label="Next Track">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                  <polygon points="5,4 15,12 5,20"></polygon>
+                  <line x1="19" y1="4" x2="19" y2="20" stroke="currentColor" stroke-width="2.5"></line>
+                </svg>
+              </button>
+            </div>
+
+            <!-- Volume Slider -->
+            <div class="music-volume-control">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+              </svg>
+              <input type="range" id="music-volume-slider" min="0" max="1" step="0.05" value="0.2" aria-label="Volume Slider">
+            </div>
+
+          </div>
+
+          <!-- Real Audio Element ready for user custom MP3s -->
+          <audio id="real-audio-element" preload="none"></audio>
+        </div>
+      </div>
+    </section>
+
+    <!-- --------------------------------------------------------------------
+         SOCIAL MEDIA SECTION: High-Energy Cosmic Teleport Links
+         -------------------------------------------------------------------- -->
+    <section id="socials" class="socials-section">
+      <div class="section-header reveal-on-scroll">
+        <span class="section-tag">COMMUNICATIONS // BEACONS</span>
+        <h2 class="section-title">SOCIAL MEDIA</h2>
+        <p class="section-desc">Connect across planetary networks and interactive frequencies.</p>
+      </div>
+
+      <div class="socials-grid">
+        
+        <!-- Instagram Link -->
+        <a href="https://www.instagram.com/adel_o.9/" target="_blank" rel="noopener noreferrer" class="social-card instagram reveal-on-scroll">
+          <div class="social-icon-wrapper">
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+              <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+              <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+            </svg>
+          </div>
+          <h3 class="social-name">Instagram</h3>
+          <span class="social-action-text">CONNECT ON INSTAGRAM ↗</span>
+        </a>
+
+        <!-- TikTok Link -->
+        <a href="https://www.tiktok.com/@mafyouzi.f?is_from_webapp=1&amp;sender_device=pc" target="_blank" rel="noopener noreferrer" class="social-card tiktok reveal-on-scroll">
+          <div class="social-icon-wrapper">
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.29 0 .57.04.84.11V9.32a6.38 6.38 0 0 0-.84-.05A6.34 6.34 0 0 0 3 15.62a6.34 6.34 0 0 0 10.82 4.48 6.3 6.3 0 0 0 1.95-4.51v-6.3a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-.95-.72z"/>
+            </svg>
+          </div>
+          <h3 class="social-name">TikTok</h3>
+          <span class="social-action-text">WATCH ON TIKTOK ↗</span>
+        </a>
+
+        <!-- WhatsApp Link -->
+        <a href="https://wa.me/212658498903" target="_blank" rel="noopener noreferrer" class="social-card whatsapp reveal-on-scroll">
+          <div class="social-icon-wrapper">
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
+            </svg>
+          </div>
+          <h3 class="social-name">WhatsApp</h3>
+          <span class="social-action-text">DIRECT CHAT ↗</span>
+        </a>
+
+      </div>
+    </section>
+
+    <!-- --------------------------------------------------------------------
+         CONTACT SECTION: Calm Starfield Communication Portal
+         -------------------------------------------------------------------- -->
+    <section id="contact" class="contact-section">
+      <div class="section-header reveal-on-scroll">
+        <span class="section-tag">STARFIELD PORTAL // COMM LINK</span>
+        <h2 class="section-title">TRANSMIT MESSAGE</h2>
+        <p class="section-desc">Initiate a secure transmission directly to my personal terminal.</p>
+      </div>
+
+      <div class="contact-pod reveal-on-scroll">
+        
+        <!-- Fast Direct Actions -->
+        <div class="contact-direct-actions">
+          <!-- Direct WhatsApp Action Button -->
+          <a href="https://wa.me/212658498903" target="_blank" rel="noopener noreferrer" class="contact-quick-btn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2z"/>
+            </svg>
+            <span>WHATSAPP INSTANT SIGNAL</span>
+          </a>
+
+          <!-- Quick Copy Email Button -->
+          <button id="copy-email-btn" class="contact-quick-btn" data-email="contact@yourdomain.com">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+            <span>COPY FREQUENCY / EMAIL</span>
+          </button>
+        </div>
+
+        <!-- Transmission Form -->
+        <form class="contact-form" id="contact-form" data-whatsapp="212658498903">
+          <div class="form-group">
+            <label for="sender-name">SENDER DESIGNATION / YOUR NAME</label>
+            <input type="text" id="sender-name" class="form-input" placeholder="e.g. Commander Alex / Your Name" required>
+          </div>
+
+          <div class="form-group">
+            <label for="sender-email">QUANTUM ADDRESS / EMAIL</label>
+            <input type="email" id="sender-email" class="form-input" placeholder="name@domain.com" required>
+          </div>
+
+          <div class="form-group">
+            <label for="sender-message">TRANSMISSION DATA / MESSAGE</label>
+            <textarea id="sender-message" class="form-textarea" placeholder="Type your cosmic message or collaboration inquiry..." required></textarea>
+          </div>
+
+          <button type="submit" class="form-submit-btn">
+            <span>TRANSMIT INTO DEEP SPACE</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+          </button>
+
+          <div class="form-status-msg" id="form-status"></div>
+        </form>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ========================================================================
+       FOOTER
+       ======================================================================== -->
+  <footer>
+    <p class="footer-text">COSMIC COORDINATES: 432Hz • SECTOR 001 • PLANET EARTH</p>
+    <p class="footer-quote">CRAFTED WITH STARS, CODE, AND VISION © 2026</p>
+  </footer>
+
+  <!-- ========================================================================
+       CINEMATIC INTRO
+       ======================================================================== -->
+  <div id="intro-overlay" aria-label="Cinematic portfolio introduction">
+    <canvas id="intro-canvas" aria-hidden="true"></canvas>
+    <div id="intro-text-container">
+      <p class="intro-pre-title">A NEW JOURNEY BEGINS</p>
+      <h1 class="intro-main-title">WELCOME TO MY PORTFOLIO</h1>
+      <div class="intro-glow-line"></div>
+    </div>
+    <button id="intro-skip-btn" class="intro-skip-btn" type="button">SKIP INTRO</button>
+  </div>
+
+  <!-- ========================================================================
+       JAVASCRIPT MODULES (Execution Order)
+       ======================================================================== -->
+  <script src="js/space-canvas.js"></script>
+  <script src="js/intro.js"></script>
+  <script src="js/loader.js"></script>
+  <script src="js/spiderman-effect.js"></script>
+  <script src="js/music-player.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
