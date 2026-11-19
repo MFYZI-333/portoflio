@@ -1,0 +1,53 @@
+/* MFYZI - Professional typography v2 (load AFTER style.css)
+   Display: Space Grotesk | Body: Manrope | Labels: IBM Plex Mono | Arabic: IBM Plex Sans Arabic */
+:root {
+  --font-display: 'Space Grotesk', 'Manrope', system-ui, sans-serif;
+  --font-body: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --font-ar: 'IBM Plex Sans Arabic', 'Tajawal', 'Segoe UI', sans-serif;
+}
+html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility; font-kerning: normal; }
+body, p, li, a, input, textarea, button { font-family: var(--font-body) !important; }
+body { font-weight: 400; line-height: 1.7; }
+
+h1, h2, h3, h4, .hero-title, .section-title, .interest-title, .social-name, .unified-title, .music-track-title, .loader-logo, .intro-main-title {
+  font-family: var(--font-display) !important; font-weight: 600; letter-spacing: -0.015em; line-height: 1.1;
+}
+.hero-title { font-weight: 700; letter-spacing: -0.03em; font-size: clamp(2.6rem, 7vw, 5.4rem); }
+.section-title { font-weight: 600; letter-spacing: 0.01em; font-size: clamp(2rem, 4.6vw, 3.4rem); }
+.interest-title, .social-name, .unified-title { font-weight: 600; letter-spacing: -0.005em; }
+.hero-subtitle, .section-desc, .interest-desc { font-weight: 400; line-height: 1.8; letter-spacing: 0; color-scheme: dark; opacity: .88; }
+
+.section-tag, .unified-badge, .music-tag, .loader-boot-lines, .loader-boot-lines p, .loader-coords, .loader-status, .loader-pct,
+.footer-text, .footer-quote, .form-group label, .social-action-text, .interest-number, .music-timestamps, .intro-pre-title, .intro-skip-btn, .loader-skip-btn {
+  font-family: var(--font-mono) !important; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase;
+}
+.cosmic-btn-primary, .cosmic-btn-secondary, .contact-quick-btn, .form-submit-btn, .nav-link, .nav-brand {
+  font-family: var(--font-display) !important; font-weight: 600; letter-spacing: 0.1em;
+}
+.form-input, .form-textarea { font-family: var(--font-body) !important; font-weight: 500; letter-spacing: 0; }
+
+/* Arabic prayers */
+.unified-prayers, .unified-prayers p, .music-youtube-fallback, .music-playback-error {
+  font-family: var(--font-ar) !important; font-weight: 400; line-height: 2.1; letter-spacing: 0; text-transform: none;
+}
+
+/* YouTube player must never be visible */
+.music-youtube-player {
+  position: fixed !important; left: 0; bottom: 0; width: 200px !important; height: 200px !important;
+  opacity: 0.001 !important; pointer-events: none !important; z-index: -1 !important; border: 0 !important;
+}
+.hero-photo-pin-embed { pointer-events: none; }
+
+/* Navbar removed: only the sound button stays, floating top-right */
+.main-nav-container {
+  display: block !important; position: fixed !important; top: 18px; right: 18px; left: auto !important;
+  width: auto !important; padding: 0 !important; background: none !important; pointer-events: none; z-index: 1000;
+}
+.main-nav-capsule {
+  background: none !important; border: 0 !important; box-shadow: none !important;
+  -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
+  padding: 0 !important; width: auto !important; min-width: 0 !important; pointer-events: none;
+}
+.nav-brand, .nav-links-list, .nav-mobile-toggle, .nav-mobile-menu { display: none !important; }
+.nav-sound-btn { display: flex !important; pointer-events: auto; }

@@ -1,288 +1,118 @@
-/**
- * SPIDER-MAN PHOTO EFFECT & COSMIC PHOTO INTERACTION
- * - 3D Tilt & Parallax Physics
- * - Cursor Gravitational Pull on Deep Space Stars
- * - Cyber Glitch & Scanline Sequence
- * - Spider-Man Holographic Mask & Glowing Eyes
- * - Procedural Spider-Web Geometry Animation
- */
+/* MFYZI - Realistic Spider-Man web effect + 3D tilt + glare */
+(function () {
+  'use strict';
+  const card = document.getElementById('hero-photo-card');
+  const cv = card && card.querySelector('.photo-web-canvas');
+  if (!card || !cv) return;
+  const ctx = cv.getContext('2d');
+  const R = (a, b) => a + Math.random() * (b - a);
+  const ease = t => 1 - Math.pow(1 - t, 3);
+  let W, H, DPR, webs = [], hover = false, mouse = { x: 0, y: 0 };
 
-class SpiderPhotoEffect {
-  constructor(cardSelector) {
-    this.card = document.querySelector(cardSelector);
-    if (!this.card) return;
+  // Let the card receive mouse events (the iframe would swallow them)
+  const ifr = card.querySelector('iframe');
+  if (ifr) ifr.style.pointerEvents = 'none';
+  Object.assign(cv.style, { position: 'absolute', inset: '0', width: '100%', height: '100%', pointerEvents: 'none', zIndex: 8 });
+  card.style.transformStyle = 'preserve-3d';
+  card.style.willChange = 'transform';
 
-    this.container = this.card.closest('.hero-photo-wrapper');
-    this.scanBeam = this.card.querySelector('.photo-scan-beam');
-    this.webCanvas = this.card.querySelector('.photo-web-canvas');
-    this.energyRing = this.container.querySelector('.photo-energy-ring');
+  const glare = document.createElement('div');
+  Object.assign(glare.style, { position: 'absolute', inset: '0', pointerEvents: 'none', opacity: 0, mixBlendMode: 'overlay', transition: 'opacity .3s', zIndex: 7, borderRadius: 'inherit' });
+  card.appendChild(glare);
 
-    // Canvas for web strands
-    this.ctx = this.webCanvas ? this.webCanvas.getContext('2d') : null;
+  function size() {
+    DPR = Math.min(devicePixelRatio || 1, 2);
+    const r = card.getBoundingClientRect();
+    W = card.offsetWidth; H = card.offsetHeight;
+    cv.width = W * DPR; cv.height = H * DPR;
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  }
+  addEventListener('resize', size); size();
 
-    // Tilt states
-    this.rect = this.card.getBoundingClientRect();
-    this.mouseX = 0;
-    this.mouseY = 0;
-    this.currentRotateX = 0;
-    this.currentRotateY = 0;
-    this.targetRotateX = 0;
-    this.targetRotateY = 0;
-
-    // Hover states & phases
-    this.isHovered = false;
-    this.isFaceHovered = false;
-    this.hoverTimeout = null;
-    this.glitchActive = false;
-
-    // Web animation particles
-    this.webFilaments = [];
-    this.webEmbers = [];
-
-    this.init();
+  function addWeb(x, y) {
+    const n = Math.floor(R(9, 13)), spokes = [], base = Math.min(W, H) * R(0.38, 0.55);
+    for (let i = 0; i < n; i++) spokes.push({ a: (i / n) * 6.283 + R(-.12, .12), l: base * R(0.8, 1.15) });
+    // anchor: shot from nearest edge
+    const ex = x < W / 2 ? 0 : W, ey = y < H / 2 ? 0 : H;
+    webs.push({ x, y, ex, ey, spokes, rings: 6, t0: performance.now(), dur: 900, out: 0, sway: R(0, 6) });
+    if (webs.length > 3) webs[0].out = performance.now();
   }
 
-  init() {
-    this.updateBounds();
-    window.addEventListener('resize', () => this.updateBounds(), { passive: true });
-    window.addEventListener('scroll', () => this.updateBounds(), { passive: true });
+  function pt(w, i, r) { const s = w.spokes[i % w.spokes.length]; return { x: w.x + Math.cos(s.a) * r, y: w.y + Math.sin(s.a) * r }; }
 
-    // Desktop Mouse Events
-    this.card.addEventListener('mouseenter', (e) => this.onMouseEnter(e));
-    this.card.addEventListener('mousemove', (e) => this.onMouseMove(e));
-    this.card.addEventListener('mouseleave', () => this.onMouseLeave());
+  function drawWeb(w, now) {
+    const p = Math.min(1, (now - w.t0) / w.dur);
+    let alpha = 1;
+    if (w.out) { alpha = 1 - (now - w.out) / 900; if (alpha <= 0) return false; }
+    const sh = Math.sin(now * 0.0015 + w.sway) * 1.2; // gentle sway
+    ctx.save(); ctx.globalAlpha = alpha; ctx.lineCap = 'round';
+    ctx.shadowColor = 'rgba(180,220,255,.9)'; ctx.shadowBlur = 5;
 
-    // Mobile Touch Events
-    this.card.addEventListener('touchstart', (e) => this.onTouchStart(e), { passive: true });
-    this.card.addEventListener('touchmove', (e) => this.onTouchMove(e), { passive: true });
-    this.card.addEventListener('touchend', () => this.onTouchEnd());
+    // shot thread from the edge (first 25%)
+    const sp = ease(Math.min(1, p / 0.25));
+    ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.moveTo(w.ex, w.ey);
+    ctx.lineTo(w.ex + (w.x - w.ex) * sp, w.ey + (w.y - w.ey) * sp); ctx.stroke();
 
-    // Start physics & web canvas loop
-    this.animate();
-  }
-
-  updateBounds() {
-    this.rect = this.card.getBoundingClientRect();
-    if (this.webCanvas) {
-      this.webCanvas.width = this.rect.width;
-      this.webCanvas.height = this.rect.height;
-    }
-  }
-
-  onMouseEnter(e) {
-    this.isHovered = true;
-    this.card.classList.add('is-hovered');
-
-    // Notify Space canvas for gravitational pull
-    const centerX = this.rect.left + this.rect.width / 2;
-    const centerY = this.rect.top + this.rect.height / 2;
-    if (window.SpaceEngineInstance) {
-      window.SpaceEngineInstance.setPhotoAttraction(true, centerX, centerY);
-    }
-
-    // Step 1: Initial Glitch Trigger (150ms)
-    this.triggerGlitch();
-
-    // Step 2: Trigger Scanline
-    this.card.classList.add('scanning');
-
-    // Step 3: Spawn Spider Web Filaments
-    this.generateWebFilaments();
-
-    // Step 4: Red/Blue Dual Energy Surge
-    this.card.classList.add('energy-active');
-  }
-
-  onMouseMove(e) {
-    if (!this.rect) this.updateBounds();
-
-    const clientX = e.clientX;
-    const clientY = e.clientY;
-
-    const x = clientX - this.rect.left;
-    const y = clientY - this.rect.top;
-
-    // Calculate normalized -1 to +1
-    const normX = (x / this.rect.width) * 2 - 1;
-    const normY = (y / this.rect.height) * 2 - 1;
-
-    // 3D Tilt rotation angles
-    this.targetRotateY = normX * 14;  // deg
-    this.targetRotateX = -normY * 14; // deg
-
-    // Check if mouse is hovering over the Face Area (top 15% to 55%, center 60%)
-    const faceLeft = this.rect.width * 0.22;
-    const faceRight = this.rect.width * 0.78;
-    const faceTop = this.rect.height * 0.15;
-    const faceBottom = this.rect.height * 0.55;
-
-    const insideFace = (x >= faceLeft && x <= faceRight && y >= faceTop && y <= faceBottom);
-    if (insideFace !== this.isFaceHovered) {
-      this.isFaceHovered = insideFace;
-      if (this.isFaceHovered) {
-        this.card.classList.add('face-focused');
-        this.emitWebEmbers(x, y, 12);
-      } else {
-        this.card.classList.remove('face-focused');
-      }
-    }
-
-    // Spawn subtle web sparks along cursor
-    if (Math.random() < 0.25) {
-      this.emitWebEmbers(x, y, 2);
-    }
-  }
-
-  onMouseLeave() {
-    this.isHovered = false;
-    this.isFaceHovered = false;
-    this.targetRotateX = 0;
-    this.targetRotateY = 0;
-
-    this.card.classList.remove('is-hovered', 'scanning', 'energy-active', 'face-focused');
-
-    if (window.SpaceEngineInstance) {
-      window.SpaceEngineInstance.setPhotoAttraction(false);
-    }
-
-    // Gradual clear of web filaments
-    this.clearWebs();
-  }
-
-  onTouchStart(e) {
-    if (e.touches.length > 0) {
-      this.onMouseEnter(e.touches[0]);
-    }
-  }
-
-  onTouchMove(e) {
-    if (e.touches.length > 0) {
-      this.onMouseMove(e.touches[0]);
-    }
-  }
-
-  onTouchEnd() {
-    setTimeout(() => this.onMouseLeave(), 1200);
-  }
-
-  triggerGlitch() {
-    this.card.classList.add('glitching');
-    setTimeout(() => {
-      this.card.classList.remove('glitching');
-    }, 380);
-  }
-
-  generateWebFilaments() {
-    this.webFilaments = [];
-    const w = this.rect.width;
-    const h = this.rect.height;
-
-    // Corner anchor points for Spider-Man webs
-    const anchors = [
-      { x: 0, y: 0 },
-      { x: w, y: 0 },
-      { x: 0, y: h },
-      { x: w, y: h },
-      { x: w * 0.5, y: 0 },
-      { x: 0, y: h * 0.4 },
-      { x: w, y: h * 0.4 }
-    ];
-
-    const faceCenter = { x: w * 0.5, y: h * 0.35 };
-
-    // Procedural web branches
-    for (const a of anchors) {
-      this.webFilaments.push({
-        x1: a.x,
-        y1: a.y,
-        x2: a.x,
-        y2: a.y,
-        targetX: faceCenter.x + (Math.random() - 0.5) * (w * 0.4),
-        targetY: faceCenter.y + (Math.random() - 0.5) * (h * 0.3),
-        progress: 0,
-        speed: Math.random() * 0.08 + 0.04,
-        color: Math.random() > 0.4 ? 'rgba(255, 0, 75, 0.7)' : 'rgba(0, 245, 255, 0.75)',
-        width: Math.random() * 1.5 + 0.8
+    const q = ease(Math.max(0, (p - 0.2) / 0.8));
+    if (q > 0) {
+      // radial spokes
+      ctx.lineWidth = 1.1; ctx.strokeStyle = 'rgba(255,255,255,.92)';
+      w.spokes.forEach(s => {
+        const l = s.l * q;
+        ctx.beginPath(); ctx.moveTo(w.x, w.y);
+        ctx.lineTo(w.x + Math.cos(s.a) * l + sh * q, w.y + Math.sin(s.a) * l);
+        ctx.stroke();
       });
-    }
-  }
-
-  emitWebEmbers(x, y, count) {
-    for (let i = 0; i < count; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      const speed = Math.random() * 3 + 1;
-      this.webEmbers.push({
-        x: x,
-        y: y,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed,
-        alpha: 1.0,
-        decay: Math.random() * 0.03 + 0.02,
-        color: Math.random() > 0.5 ? '#ff0055' : '#00f5ff',
-        radius: Math.random() * 1.5 + 0.8
-      });
-    }
-  }
-
-  clearWebs() {
-    this.webFilaments = [];
-  }
-
-  animate() {
-    // Smooth 3D tilt interpolation
-    this.currentRotateX += (this.targetRotateX - this.currentRotateX) * 0.1;
-    this.currentRotateY += (this.targetRotateY - this.currentRotateY) * 0.1;
-
-    // Apply transform to the card
-    this.card.style.transform = `perspective(1000px) rotateX(${this.currentRotateX.toFixed(2)}deg) rotateY(${this.currentRotateY.toFixed(2)}deg) scale3d(${this.isHovered ? 1.03 : 1}, ${this.isHovered ? 1.03 : 1}, 1)`;
-
-    // Draw Web Canvas overlay
-    if (this.ctx && this.webCanvas) {
-      this.ctx.clearRect(0, 0, this.webCanvas.width, this.webCanvas.height);
-
-      // 1. Draw web filaments shooting into frame
-      for (const web of this.webFilaments) {
-        if (web.progress < 1) {
-          web.progress = Math.min(1, web.progress + web.speed);
-        }
-        const curX = web.x1 + (web.targetX - web.x1) * web.progress;
-        const curY = web.y1 + (web.targetY - web.y1) * web.progress;
-
-        this.ctx.strokeStyle = web.color;
-        this.ctx.lineWidth = web.width;
-        this.ctx.shadowColor = web.color;
-        this.ctx.shadowBlur = 6;
-        this.ctx.beginPath();
-        this.ctx.moveTo(web.x1, web.y1);
-        this.ctx.lineTo(curX, curY);
-        this.ctx.stroke();
-      }
-
-      // 2. Draw Embers
-      for (let i = this.webEmbers.length - 1; i >= 0; i--) {
-        const ember = this.webEmbers[i];
-        ember.x += ember.vx;
-        ember.y += ember.vy;
-        ember.alpha -= ember.decay;
-
-        this.ctx.fillStyle = ember.color;
-        this.ctx.globalAlpha = Math.max(0, ember.alpha);
-        this.ctx.beginPath();
-        this.ctx.arc(ember.x, ember.y, ember.radius, 0, Math.PI * 2);
-        this.ctx.fill();
-
-        if (ember.alpha <= 0) {
-          this.webEmbers.splice(i, 1);
+      // sagging spiral rings
+      ctx.lineWidth = 0.7; ctx.strokeStyle = 'rgba(255,255,255,.8)';
+      for (let k = 1; k <= w.rings; k++) {
+        const rr = (k / w.rings) * w.spokes[0].l * 0.95 * q;
+        for (let i = 0; i < w.spokes.length; i++) {
+          const s1 = w.spokes[i], s2 = w.spokes[(i + 1) % w.spokes.length];
+          if (rr > Math.min(s1.l, s2.l) * q) continue;
+          const a = pt(w, i, rr), b = pt(w, i + 1, rr);
+          const mxp = (a.x + b.x) / 2, myp = (a.y + b.y) / 2;
+          const sag = 0.28 + k * 0.01; // pull toward center = real web curve
+          const cxp = mxp + (w.x - mxp) * sag, cyp = myp + (w.y - myp) * sag;
+          ctx.beginPath(); ctx.moveTo(a.x + sh * q, a.y);
+          ctx.quadraticCurveTo(cxp + sh * q, cyp, b.x + sh * q, b.y); ctx.stroke();
         }
       }
-      this.ctx.globalAlpha = 1.0;
+      // dew-like sparkle at center
+      ctx.shadowBlur = 12; ctx.fillStyle = 'rgba(255,255,255,.9)';
+      ctx.beginPath(); ctx.arc(w.x, w.y, 2, 0, 6.283); ctx.fill();
     }
-
-    requestAnimationFrame(() => this.animate());
+    ctx.restore();
+    return true;
   }
-}
 
-// Global initialization
-window.addEventListener('DOMContentLoaded', () => {
-  window.SpiderPhotoInstance = new SpiderPhotoEffect('.hero-photo-card');
-});
+  function loop(now) {
+    requestAnimationFrame(loop);
+    ctx.clearRect(0, 0, W, H);
+    webs = webs.filter(w => drawWeb(w, now));
+  }
+  requestAnimationFrame(loop);
+
+  function local(e) { const r = card.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top, w: r.width, h: r.height }; }
+
+  card.addEventListener('mouseenter', e => {
+    hover = true; size(); card.style.transition = 'transform .12s ease-out, box-shadow .3s';
+    glare.style.opacity = 1;
+    const p = local(e); addWeb(p.x, p.y);
+  });
+  card.addEventListener('mousemove', e => {
+    const p = local(e), px = p.x / p.w - 0.5, py = p.y / p.h - 0.5;
+    card.style.transform = `perspective(900px) rotateX(${-py * 14}deg) rotateY(${px * 16}deg) translateZ(20px) scale(1.04)`;
+    card.style.boxShadow = `${-px * 40}px ${-py * 40}px 60px rgba(0,180,255,.25), 0 0 40px rgba(255,0,60,.2)`;
+    glare.style.background = `radial-gradient(circle at ${p.x}px ${p.y}px, rgba(255,255,255,.55), rgba(255,255,255,0) 55%)`;
+  });
+  card.addEventListener('mouseleave', () => {
+    hover = false; const now = performance.now();
+    webs.forEach(w => { if (!w.out) w.out = now; });
+    card.style.transition = 'transform .7s cubic-bezier(.2,.8,.2,1), box-shadow .7s';
+    card.style.transform = 'perspective(900px) rotateX(0) rotateY(0) translateZ(0) scale(1)';
+    card.style.boxShadow = ''; glare.style.opacity = 0;
+  });
+  card.addEventListener('click', e => { const p = local(e); addWeb(p.x, p.y); });
+})();

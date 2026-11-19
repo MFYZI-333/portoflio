@@ -1,526 +1,174 @@
-/**
- * DEEP SPACE ENGINE — High Performance Cinematic Canvas
- * Handles dynamic stars, nebula clouds, meteors, parallax, cosmic lightning,
- * and photo gravitational interaction.
- */
+/* MFYZI - Photoreal deep space: Milky Way, dust lanes, nebula, magnitude-based stars, lightning */
+(function () {
+  'use strict';
+  const cv = document.getElementById('space-canvas');
+  if (!cv) return;
+  const ctx = cv.getContext('2d');
+  const R = (a, b) => a + Math.random() * (b - a);
+  let W, H, DPR, bg, bgW, bgH, layers = [], mx = 0, my = 0, cx = 0, cy = 0;
+  const meteors = []; let bolt = null;
 
-class SpaceEngine {
-  constructor(canvasId) {
-    this.canvas = document.getElementById(canvasId);
-    if (!this.canvas) return;
-    this.ctx = this.canvas.getContext('2d', { alpha: false });
-
-    this.width = window.innerWidth;
-    this.height = window.innerHeight;
-    this.dpr = Math.min(window.devicePixelRatio || 1, 2);
-
-    // Mouse coordinates & smooth damping (lerp)
-    this.mouse = { x: this.width / 2, y: this.height / 2 };
-    this.smoothMouse = { x: this.width / 2, y: this.height / 2 };
-    this.targetScroll = 0;
-    this.smoothScroll = 0;
-
-    // Interaction flags
-    this.isAttractingToPhoto = false;
-    this.attractTarget = { x: this.width / 2, y: this.height / 2 };
-    this.currentSection = 'hero';
-
-    // Entities
-    this.stars = [];
-    this.dustParticles = [];
-    this.meteors = [];
-    this.lightningBolts = [];
-    this.galaxies = [];
-    this.nebulaOrbs = [];
-
-    // Lighting flash state
-    this.flashAlpha = 0;
-    this.lightningTimer = 0;
-    this.nextLightningInterval = 500 + Math.random() * 600; // frames (~10-15s)
-
-    // Reduced motion check
-    this.reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-    this.init();
+  /* ---------- value-noise fBm ---------- */
+  const hash = (x, y) => { let h = x * 374761393 + y * 668265263; h = (h ^ (h >> 13)) * 1274126177; return ((h ^ (h >> 16)) >>> 0) / 4294967295; };
+  const sm = t => t * t * (3 - 2 * t);
+  function noise(x, y) {
+    const xi = Math.floor(x), yi = Math.floor(y), xf = sm(x - xi), yf = sm(y - yi);
+    const a = hash(xi, yi), b = hash(xi + 1, yi), c = hash(xi, yi + 1), d = hash(xi + 1, yi + 1);
+    return a + (b - a) * xf + (c - a) * yf + (a - b - c + d) * xf * yf;
   }
+  function fbm(x, y, o) { let v = 0, a = 0.5, f = 1; for (let i = 0; i < o; i++) { v += a * noise(x * f, y * f); f *= 2.03; a *= 0.5; } return v; }
+  const step = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 
-  init() {
-    this.resize();
-    this.createStarfield();
-    this.createGalaxies();
-    this.createNebulaOrbs();
-    this.createDust();
-
-    // Event listeners
-    window.addEventListener('resize', () => this.resize(), { passive: true });
-    window.addEventListener('mousemove', (e) => this.onMouseMove(e), { passive: true });
-    window.addEventListener('scroll', () => this.onScroll(), { passive: true });
-
-    // Start loop
-    this.animate();
-  }
-
-  resize() {
-    this.width = window.innerWidth;
-    this.height = window.innerHeight;
-    this.canvas.width = Math.floor(this.width * this.dpr);
-    this.canvas.height = Math.floor(this.height * this.dpr);
-    this.ctx.scale(this.dpr, this.dpr);
-
-    // Rebuild or update bounds
-    this.createStarfield();
-    this.createDust();
-  }
-
-  onMouseMove(e) {
-    this.mouse.x = e.clientX;
-    this.mouse.y = e.clientY;
-  }
-
-  onScroll() {
-    this.targetScroll = window.scrollY;
-  }
-
-  setSection(sectionId) {
-    this.currentSection = sectionId;
-  }
-
-  setPhotoAttraction(active, clientX, clientY) {
-    this.isAttractingToPhoto = active;
-    if (clientX !== undefined && clientY !== undefined) {
-      this.attractTarget.x = clientX;
-      this.attractTarget.y = clientY;
+  /* ---------- static background (Milky Way + nebula) ---------- */
+  function buildBackground() {
+    bgW = Math.ceil(W * 1.2); bgH = Math.ceil(H * 1.2);
+    const nw = Math.ceil(bgW / 3), nh = Math.ceil(bgH / 3);
+    const small = document.createElement('canvas'); small.width = nw; small.height = nh;
+    const sc = small.getContext('2d'), img = sc.createImageData(nw, nh), d = img.data;
+    const ang = -0.5, sa = Math.sin(ang), ca = Math.cos(ang), seed = Math.random() * 100;
+    for (let y = 0; y < nh; y++) for (let x = 0; x < nw; x++) {
+      const u = x / nw, v = y / nh, aspect = nw / nh;
+      const px = (u - 0.5) * aspect, py = v - 0.5;
+      const dist = px * sa + py * ca;                  // distance from galactic plane
+      const along = px * ca - py * sa;
+      const band = Math.exp(-Math.pow(dist / 0.17, 2));
+      const core = Math.exp(-(Math.pow((along - 0.12) / 0.34, 2) + Math.pow(dist / 0.12, 2)));
+      const n1 = fbm(u * 6 + seed, v * 6, 6), n2 = fbm(u * 11 + 7, v * 11 + seed, 5);
+      const lane = step(0.48, 0.72, n2) * Math.exp(-Math.pow((dist - 0.01) / 0.1, 2)); // dark dust lanes
+      let b = band * (0.28 + 0.95 * n1) + core * 0.7;
+      b = Math.max(0, b - lane * 0.95);
+      // coloured emission nebulae away from the band
+      const e1 = step(0.52, 0.85, fbm(u * 2.4 + seed, v * 2.4 + 20, 5)) * 0.30;
+      const e2 = step(0.55, 0.88, fbm(u * 2.2 + 50, v * 2.2 + seed, 5)) * 0.24;
+      const warm = Math.min(1, core * 1.4);
+      let r = 3 + b * (95 + 140 * warm) + e1 * 120 + e2 * 20;
+      let g = 4 + b * (110 + 80 * warm) + e1 * 30 + e2 * 95;
+      let bl = 9 + b * (150 + 10 * warm) + e1 * 170 + e2 * 150;
+      const i = (y * nw + x) * 4;
+      d[i] = Math.min(255, r); d[i + 1] = Math.min(255, g); d[i + 2] = Math.min(255, bl); d[i + 3] = 255;
     }
-  }
-
-  createStarfield() {
-    this.stars = [];
-    // Mobile optimization: fewer stars
-    const isMobile = this.width < 768;
-    const starCount = isMobile ? 180 : 420;
-
-    for (let i = 0; i < starCount; i++) {
-      // 3 depth layers: 0: far, 1: mid, 2: near
-      const depth = Math.random() < 0.6 ? 0 : Math.random() < 0.88 ? 1 : 2;
-      let radius, baseAlpha, color;
-
-      if (depth === 0) {
-        radius = Math.random() * 0.9 + 0.3;
-        baseAlpha = Math.random() * 0.5 + 0.2;
-        color = '#ffffff';
-      } else if (depth === 1) {
-        radius = Math.random() * 1.3 + 0.8;
-        baseAlpha = Math.random() * 0.6 + 0.4;
-        color = Math.random() > 0.4 ? '#d8f4ff' : '#00f5ff';
-      } else {
-        radius = Math.random() * 1.8 + 1.2;
-        baseAlpha = Math.random() * 0.4 + 0.6;
-        color = Math.random() > 0.5 ? '#ffffff' : Math.random() > 0.5 ? '#00e5ff' : '#93c5fd';
-      }
-
-      this.stars.push({
-        x: Math.random() * this.width,
-        y: Math.random() * this.height,
-        depth: depth,
-        radius: radius,
-        color: color,
-        baseAlpha: baseAlpha,
-        alpha: baseAlpha,
-        twinkleSpeed: Math.random() * 0.03 + 0.008,
-        twinklePhase: Math.random() * Math.PI * 2,
-        hasCrossSpike: depth === 2 && Math.random() > 0.65
-      });
+    sc.putImageData(img, 0, 0);
+    bg = document.createElement('canvas'); bg.width = bgW; bg.height = bgH;
+    const b = bg.getContext('2d'); b.imageSmoothingQuality = 'high'; b.drawImage(small, 0, 0, bgW, bgH);
+    // dense faint stars concentrated on the galactic plane
+    const asp = bgW / bgH;
+    for (let i = 0; i < 14000; i++) {
+      const x = Math.random() * bgW, y = Math.random() * bgH;
+      const px = (x / bgW - 0.5) * asp, py = y / bgH - 0.5;
+      const dist = px * sa + py * ca, p = Math.exp(-Math.pow(dist / 0.2, 2));
+      if (Math.random() > 0.15 + p * 0.85) continue;
+      b.fillStyle = `rgba(${200 + R(0, 55) | 0},${200 + R(0, 55) | 0},255,${R(0.1, 0.55) * (0.4 + p)})`;
+      b.fillRect(x, y, Math.random() < 0.9 ? 1 : 1.5, 1);
     }
+    // vignette
+    const vg = b.createRadialGradient(bgW / 2, bgH / 2, bgH * 0.3, bgW / 2, bgH / 2, bgW * 0.7);
+    vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,6,0.55)');
+    b.fillStyle = vg; b.fillRect(0, 0, bgW, bgH);
   }
 
-  createGalaxies() {
-    this.galaxies = [
-      {
-        x: this.width * 0.82,
-        y: this.height * 0.28,
-        rx: 140,
-        ry: 55,
-        rotation: -0.45,
-        colorInner: 'rgba(0, 245, 255, 0.12)',
-        colorMid: 'rgba(0, 102, 255, 0.07)',
-        colorOuter: 'rgba(15, 23, 42, 0)'
-      },
-      {
-        x: this.width * 0.16,
-        y: this.height * 0.75,
-        rx: 180,
-        ry: 70,
-        rotation: 0.38,
-        colorInner: 'rgba(99, 102, 241, 0.10)',
-        colorMid: 'rgba(14, 165, 233, 0.05)',
-        colorOuter: 'rgba(5, 11, 24, 0)'
-      }
-    ];
-  }
-
-  createNebulaOrbs() {
-    this.nebulaOrbs = [
-      { x: this.width * 0.3, y: this.height * 0.35, r: 380, color: 'rgba(0, 210, 255, 0.055)', vx: 0.08, vy: 0.05 },
-      { x: this.width * 0.75, y: this.height * 0.65, r: 450, color: 'rgba(0, 102, 255, 0.045)', vx: -0.06, vy: 0.07 },
-      { x: this.width * 0.5, y: this.height * 0.85, r: 520, color: 'rgba(67, 56, 202, 0.04)', vx: 0.04, vy: -0.05 }
-    ];
-  }
-
-  createDust() {
-    this.dustParticles = [];
-    const count = this.width < 768 ? 40 : 85;
-    for (let i = 0; i < count; i++) {
-      this.dustParticles.push({
-        x: Math.random() * this.width,
-        y: Math.random() * this.height,
-        vx: (Math.random() - 0.5) * 0.35,
-        vy: (Math.random() - 0.5) * 0.35,
-        radius: Math.random() * 1.5 + 0.6,
-        alpha: Math.random() * 0.4 + 0.15,
-        color: Math.random() > 0.4 ? 'rgba(0, 245, 255,' : 'rgba(147, 197, 253,'
-      });
-    }
-  }
-
-  spawnMeteor() {
-    const startX = Math.random() * (this.width * 0.9) + this.width * 0.1;
-    const startY = Math.random() * (this.height * 0.35) - 50;
-    const angle = (Math.PI / 180) * (Math.random() * 25 + 35); // 35 to 60 deg down-left/down-right
-    const speed = Math.random() * 8 + 14;
-    const length = Math.random() * 110 + 90;
-
-    this.meteors.push({
-      x: startX,
-      y: startY,
-      dx: -Math.cos(angle) * speed,
-      dy: Math.sin(angle) * speed,
-      length: length,
-      alpha: 1,
-      decay: Math.random() * 0.015 + 0.018,
-      thickness: Math.random() * 1.6 + 1.2,
-      sparks: []
+  /* ---------- dynamic stars (3 parallax layers, real magnitude distribution) ---------- */
+  const tints = ['255,255,255', '175,200,255', '255,235,205', '255,200,170', '200,215,255'];
+  function buildStars() {
+    layers = [0.012, 0.03, 0.07].map((par, li) => {
+      const n = Math.floor(W * H / [2600, 6000, 22000][li]);
+      return {
+        par, stars: Array.from({ length: n }, () => ({
+          x: R(-0.1, 1.1) * W, y: R(-0.1, 1.1) * H,
+          s: 0.3 + Math.pow(Math.random(), 7) * (2.2 + li * 0.6),
+          t: tints[(Math.random() * tints.length) | 0], ph: R(0, 6.28), sp: R(0.4, 1.6), a: R(0.35, 1)
+        }))
+      };
     });
   }
 
-  triggerCosmicLightning(startX, startY, intensity = 1.0) {
-    const x1 = startX !== undefined ? startX : Math.random() * (this.width * 0.8) + this.width * 0.1;
-    const y1 = startY !== undefined ? startY : 0;
-    const targetY = y1 + Math.random() * (this.height * 0.6) + this.height * 0.35;
-    const targetX = x1 + (Math.random() - 0.5) * (this.width * 0.5);
-
-    const bolt = this.generateFractalLightning(x1, y1, targetX, targetY, 6, 45);
-    this.lightningBolts.push({
-      segments: bolt,
-      alpha: 1.0 * intensity,
-      decay: 0.06,
-      color: '#ffffff',
-      glow: '#00d2ff'
-    });
-
-    this.flashAlpha = Math.min(0.55 * intensity, 0.7);
+  function resize() {
+    DPR = Math.min(devicePixelRatio || 1, 2);
+    W = innerWidth; H = innerHeight;
+    cv.width = W * DPR; cv.height = H * DPR; cv.style.width = W + 'px'; cv.style.height = H + 'px';
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    buildBackground(); buildStars();
   }
 
-  generateFractalLightning(x1, y1, x2, y2, depth, roughness) {
-    let segments = [{ x1, y1, x2, y2 }];
-    for (let d = 0; d < depth; d++) {
-      const newSegments = [];
-      for (const seg of segments) {
-        const midX = (seg.x1 + seg.x2) / 2;
-        const midY = (seg.y1 + seg.y2) / 2;
-        const displacement = (Math.random() - 0.5) * roughness;
-        const normalX = -(seg.y2 - seg.y1) * 0.15;
-        const normalY = (seg.x2 - seg.x1) * 0.15;
+  /* ---------- lightning ---------- */
+  function makeBolt() {
+    const sx = R(W * 0.15, W * 0.85), ex = sx + R(-W * 0.18, W * 0.18), ey = H * R(0.55, 0.95), segs = [];
+    (function jag(a, b, off, dp, w) {
+      if (!dp) { segs.push([a, b, w]); return; }
+      const m = { x: (a.x + b.x) / 2 + R(-.5, .5) * off, y: (a.y + b.y) / 2 + R(-.5, .5) * off * .4 };
+      jag(a, m, off / 2, dp - 1, w); jag(m, b, off / 2, dp - 1, w);
+      if (dp >= 4 && w > .4 && Math.random() < .2) jag(m, { x: m.x + (Math.random() < .5 ? -1 : 1) * R(30, 180), y: m.y + R(60, 260) }, off / 2.2, dp - 2, w * .5);
+    })({ x: sx, y: -10 }, { x: ex, y: ey }, H * .35, 7, 1);
+    window.dispatchEvent(new Event('mfyzi:lightning'));
+    bolt = { segs, sx, f: 0, seq: [1, .15, .9, .3, .65, .2, .35, .12, .06, .02] };
+  }
+  function drawBolt(a) {
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    const g = ctx.createRadialGradient(bolt.sx, 0, 0, bolt.sx, 0, H * 1.1);
+    g.addColorStop(0, `rgba(140,170,255,${a * .35})`); g.addColorStop(1, 'rgba(60,80,200,0)');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = `rgba(150,180,255,${a * .06})`; ctx.fillRect(0, 0, W, H);
+    ctx.lineCap = ctx.lineJoin = 'round';
+    for (const [lw, al, col] of [[16, .07, '90,130,255'], [7, .18, '130,170,255'], [3, .55, '200,220,255'], [1.2, 1, '255,255,255']]) {
+      ctx.strokeStyle = `rgba(${col},${al * a})`;
+      for (const [p, q, w] of bolt.segs) { ctx.lineWidth = Math.max(.4, lw * w); ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); ctx.stroke(); }
+    }
+    ctx.restore();
+  }
+  window.triggerLightning = makeBolt;
+  let nextBolt = performance.now() + R(4000, 7000);
 
-        const displacedX = midX + normalX + displacement;
-        const displacedY = midY + normalY + displacement;
+  addEventListener('mousemove', e => { mx = e.clientX / W - .5; my = e.clientY / H - .5; }, { passive: true });
+  addEventListener('resize', resize);
 
-        newSegments.push({ x1: seg.x1, y1: seg.y1, x2: displacedX, y2: displacedY });
-        newSegments.push({ x1: displacedX, y1: displacedY, x2: seg.x2, y2: seg.y2 });
+  let last = performance.now(), fr = 0;
+  function frame(t) {
+    requestAnimationFrame(frame);
+    if (document.hidden) { last = t; return; }
+    const dt = Math.min(50, t - last) / 16.67; last = t; fr += dt;
+    cx += (mx - cx) * .04; cy += (my - cy) * .04;
+    // background with very slow drift + parallax
+    const drift = Math.sin(fr * 0.0006) * 14;
+    ctx.drawImage(bg, -(bgW - W) / 2 - cx * 40 + drift, -(bgH - H) / 2 - cy * 28, bgW, bgH);
 
-        // Occasional branch
-        if (Math.random() < 0.22 && d < 4) {
-          const branchTargetX = displacedX + (Math.random() - 0.5) * 120;
-          const branchTargetY = displacedY + Math.random() * 90 + 30;
-          newSegments.push({ x1: displacedX, y1: displacedY, x2: branchTargetX, y2: branchTargetY });
+    for (const L of layers) {
+      const ox = -cx * L.par * W + fr * L.par * 0.05, oy = -cy * L.par * H;
+      for (const s of L.stars) {
+        let x = (s.x + ox) % (W * 1.2); if (x < 0) x += W * 1.2; x -= W * .1;
+        const y = s.y + oy;
+        const al = s.a * (0.78 + 0.22 * Math.sin(fr * 0.04 * s.sp + s.ph));
+        if (s.s > 1.4) { // bright stars: soft glow + diffraction spikes
+          const gl = s.s * 5, g = ctx.createRadialGradient(x, y, 0, x, y, gl);
+          g.addColorStop(0, `rgba(${s.t},${al * .55})`); g.addColorStop(1, `rgba(${s.t},0)`);
+          ctx.fillStyle = g; ctx.fillRect(x - gl, y - gl, gl * 2, gl * 2);
+          ctx.strokeStyle = `rgba(${s.t},${al * .35})`; ctx.lineWidth = .6;
+          ctx.beginPath(); ctx.moveTo(x - gl * 1.6, y); ctx.lineTo(x + gl * 1.6, y); ctx.moveTo(x, y - gl * 1.6); ctx.lineTo(x, y + gl * 1.6); ctx.stroke();
         }
-      }
-      segments = newSegments;
-      roughness *= 0.55;
-    }
-    return segments;
-  }
-
-  update() {
-    // Parallax damping
-    this.smoothMouse.x += (this.mouse.x - this.smoothMouse.x) * 0.05;
-    this.smoothMouse.y += (this.mouse.y - this.smoothMouse.y) * 0.05;
-    this.smoothScroll += (this.targetScroll - this.smoothScroll) * 0.08;
-
-    const offsetX = (this.smoothMouse.x - this.width / 2) / (this.width / 2);
-    const offsetY = (this.smoothMouse.y - this.height / 2) / (this.height / 2);
-
-    // Drifting Nebulas
-    for (const orb of this.nebulaOrbs) {
-      orb.x += orb.vx;
-      orb.y += orb.vy;
-      if (orb.x < -100 || orb.x > this.width + 100) orb.vx *= -1;
-      if (orb.y < -100 || orb.y > this.height + 100) orb.vy *= -1;
-    }
-
-    // Stars update & twinkle
-    for (const star of this.stars) {
-      star.twinklePhase += star.twinkleSpeed;
-      star.alpha = star.baseAlpha + Math.sin(star.twinklePhase) * 0.25;
-      star.alpha = Math.max(0.08, Math.min(1, star.alpha));
-    }
-
-    // Dust particles
-    for (const p of this.dustParticles) {
-      if (this.isAttractingToPhoto) {
-        // Gravitational pull toward photo
-        const dx = this.attractTarget.x - p.x;
-        const dy = this.attractTarget.y - p.y;
-        const dist = Math.hypot(dx, dy);
-        if (dist < 450) {
-          const force = (450 - dist) / 450 * 1.8;
-          p.x += (dx / dist) * force;
-          p.y += (dy / dist) * force;
-        }
-      } else {
-        p.x += p.vx;
-        p.y += p.vy;
-      }
-
-      if (p.x < 0) p.x = this.width;
-      if (p.x > this.width) p.x = 0;
-      if (p.y < 0) p.y = this.height;
-      if (p.y > this.height) p.y = 0;
-    }
-
-    // Meteors
-    // Check section for meteor frequency
-    const meteorRate = this.currentSection === 'interests' ? 0.045 : 0.015;
-    if (Math.random() < meteorRate && this.meteors.length < 5) {
-      this.spawnMeteor();
-    }
-
-    for (let i = this.meteors.length - 1; i >= 0; i--) {
-      const m = this.meteors[i];
-      m.x += m.dx;
-      m.y += m.dy;
-      m.alpha -= m.decay;
-
-      // Trail spark particles
-      if (Math.random() < 0.4) {
-        m.sparks.push({
-          x: m.x,
-          y: m.y,
-          vx: (Math.random() - 0.5) * 1.5,
-          vy: (Math.random() - 0.5) * 1.5,
-          alpha: m.alpha,
-          radius: Math.random() * 1.2 + 0.5
-        });
-      }
-
-      // Update sparks
-      for (let s = m.sparks.length - 1; s >= 0; s--) {
-        const sp = m.sparks[s];
-        sp.x += sp.vx;
-        sp.y += sp.vy;
-        sp.alpha -= 0.04;
-        if (sp.alpha <= 0) m.sparks.splice(s, 1);
-      }
-
-      if (m.alpha <= 0 || m.x < -150 || m.y > this.height + 150) {
-        this.meteors.splice(i, 1);
+        ctx.fillStyle = `rgba(${s.t},${al})`;
+        ctx.beginPath(); ctx.arc(x, y, s.s * .6, 0, 6.283); ctx.fill();
       }
     }
 
-    // Ambient lightning timer
-    this.lightningTimer++;
-    if (this.lightningTimer > this.nextLightningInterval) {
-      this.triggerCosmicLightning();
-      this.lightningTimer = 0;
-      this.nextLightningInterval = 550 + Math.random() * 650;
+    if (Math.random() < .0035 * dt) {
+      const a = R(.5, .9), sp = R(12, 20);
+      meteors.push({ x: R(0, W), y: R(-40, H * .35), vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, l: R(90, 220), life: 1 });
+    }
+    for (let i = meteors.length - 1; i >= 0; i--) {
+      const m = meteors[i]; m.x += m.vx * dt; m.y += m.vy * dt; m.life -= .02 * dt;
+      if (m.life <= 0) { meteors.splice(i, 1); continue; }
+      const sp = Math.hypot(m.vx, m.vy), tx = m.x - m.vx / sp * m.l, ty = m.y - m.vy / sp * m.l;
+      const g = ctx.createLinearGradient(m.x, m.y, tx, ty);
+      g.addColorStop(0, `rgba(255,255,255,${m.life})`); g.addColorStop(.3, `rgba(190,215,255,${m.life * .5})`); g.addColorStop(1, 'rgba(120,160,255,0)');
+      ctx.strokeStyle = g; ctx.lineWidth = 1.5; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(m.x, m.y); ctx.lineTo(tx, ty); ctx.stroke();
     }
 
-    // Lightning decay
-    for (let i = this.lightningBolts.length - 1; i >= 0; i--) {
-      const b = this.lightningBolts[i];
-      b.alpha -= b.decay;
-      if (b.alpha <= 0) {
-        this.lightningBolts.splice(i, 1);
-      }
-    }
-
-    if (this.flashAlpha > 0) {
-      this.flashAlpha -= 0.04;
-      if (this.flashAlpha < 0) this.flashAlpha = 0;
+    if (!bolt && t > nextBolt) makeBolt();
+    if (bolt) {
+      const i = Math.floor(bolt.f);
+      if (i >= bolt.seq.length) { bolt = null; nextBolt = t + R(5000, 12000); }
+      else { drawBolt(bolt.seq[i] * (.85 + Math.random() * .15)); bolt.f += .35 * dt; }
     }
   }
-
-  draw() {
-    const ctx = this.ctx;
-    ctx.clearRect(0, 0, this.width, this.height);
-
-    // 1. Deep Space Base Gradient
-    const baseGradient = ctx.createLinearGradient(0, 0, 0, this.height);
-    baseGradient.addColorStop(0, '#020409');
-    baseGradient.addColorStop(0.5, '#050b14');
-    baseGradient.addColorStop(1, '#010307');
-    ctx.fillStyle = baseGradient;
-    ctx.fillRect(0, 0, this.width, this.height);
-
-    // 2. Dynamic Nebula Clouds
-    for (const orb of this.nebulaOrbs) {
-      const grad = ctx.createRadialGradient(orb.x, orb.y, 10, orb.x, orb.y, orb.r);
-      grad.addColorStop(0, orb.color);
-      grad.addColorStop(1, 'rgba(2, 4, 10, 0)');
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, this.width, this.height);
-    }
-
-    // 3. Distant Galaxies
-    for (const gal of this.galaxies) {
-      ctx.save();
-      ctx.translate(gal.x, gal.y);
-      ctx.rotate(gal.rotation);
-      const galGrad = ctx.createRadialGradient(0, 0, 5, 0, 0, gal.rx);
-      galGrad.addColorStop(0, gal.colorInner);
-      galGrad.addColorStop(0.5, gal.colorMid);
-      galGrad.addColorStop(1, gal.colorOuter);
-      ctx.fillStyle = galGrad;
-      ctx.scale(1, gal.ry / gal.rx);
-      ctx.beginPath();
-      ctx.arc(0, 0, gal.rx, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-    }
-
-    // Parallax calculations
-    const offsetX = (this.smoothMouse.x - this.width / 2) * 0.025;
-    const offsetY = (this.smoothMouse.y - this.height / 2) * 0.025;
-    const scrollShift = this.smoothScroll * 0.15;
-
-    // 4. Starfield Layers
-    for (const star of this.stars) {
-      const factor = (star.depth + 1) * 0.45;
-      let sx = star.x + offsetX * factor;
-      let sy = star.y + offsetY * factor - (scrollShift * factor) % this.height;
-
-      // Wrap-around
-      if (sy < 0) sy += this.height;
-      if (sy > this.height) sy -= this.height;
-      if (sx < 0) sx += this.width;
-      if (sx > this.width) sx -= this.width;
-
-      ctx.fillStyle = star.color;
-      ctx.globalAlpha = star.alpha;
-      ctx.beginPath();
-      ctx.arc(sx, sy, star.radius, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Cross diffraction spikes on luminous stars
-      if (star.hasCrossSpike && star.alpha > 0.6) {
-        ctx.strokeStyle = star.color;
-        ctx.lineWidth = 0.6;
-        const spikeLen = star.radius * 3.5;
-        ctx.beginPath();
-        ctx.moveTo(sx - spikeLen, sy);
-        ctx.lineTo(sx + spikeLen, sy);
-        ctx.moveTo(sx, sy - spikeLen);
-        ctx.lineTo(sx, sy + spikeLen);
-        ctx.stroke();
-      }
-    }
-    ctx.globalAlpha = 1.0;
-
-    // 5. Cosmic Dust / Energy Particles
-    for (const p of this.dustParticles) {
-      ctx.fillStyle = p.color + p.alpha + ')';
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    // 6. Meteors / Shooting Stars
-    for (const m of this.meteors) {
-      ctx.save();
-      const grad = ctx.createLinearGradient(m.x, m.y, m.x - m.dx * (m.length / 14), m.y - m.dy * (m.length / 14));
-      grad.addColorStop(0, `rgba(255, 255, 255, ${m.alpha})`);
-      grad.addColorStop(0.3, `rgba(0, 245, 255, ${m.alpha * 0.85})`);
-      grad.addColorStop(0.8, `rgba(0, 102, 255, ${m.alpha * 0.4})`);
-      grad.addColorStop(1, 'rgba(0, 30, 80, 0)');
-
-      ctx.strokeStyle = grad;
-      ctx.lineWidth = m.thickness;
-      ctx.lineCap = 'round';
-      ctx.beginPath();
-      ctx.moveTo(m.x, m.y);
-      ctx.lineTo(m.x - m.dx * (m.length / 14), m.y - m.dy * (m.length / 14));
-      ctx.stroke();
-
-      // Meteor Head Glow
-      ctx.fillStyle = `rgba(255, 255, 255, ${m.alpha})`;
-      ctx.beginPath();
-      ctx.arc(m.x, m.y, m.thickness * 1.5, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Meteor Sparks
-      for (const sp of m.sparks) {
-        ctx.fillStyle = `rgba(0, 245, 255, ${sp.alpha})`;
-        ctx.beginPath();
-        ctx.arc(sp.x, sp.y, sp.radius, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      ctx.restore();
-    }
-
-    // 7. Cosmic Lightning Bolts
-    for (const b of this.lightningBolts) {
-      ctx.save();
-      // Outer Glow
-      ctx.strokeStyle = b.glow;
-      ctx.lineWidth = 5;
-      ctx.globalAlpha = b.alpha * 0.55;
-      ctx.beginPath();
-      for (const seg of b.segments) {
-        ctx.moveTo(seg.x1, seg.y1);
-        ctx.lineTo(seg.x2, seg.y2);
-      }
-      ctx.stroke();
-
-      // Inner Core
-      ctx.strokeStyle = b.color;
-      ctx.lineWidth = 2;
-      ctx.globalAlpha = b.alpha;
-      ctx.beginPath();
-      for (const seg of b.segments) {
-        ctx.moveTo(seg.x1, seg.y1);
-        ctx.lineTo(seg.x2, seg.y2);
-      }
-      ctx.stroke();
-      ctx.restore();
-    }
-
-    // 8. Lightning Screen Flash
-    if (this.flashAlpha > 0) {
-      ctx.fillStyle = `rgba(0, 210, 255, ${this.flashAlpha * 0.35})`;
-      ctx.fillRect(0, 0, this.width, this.height);
-      ctx.fillStyle = `rgba(255, 255, 255, ${this.flashAlpha * 0.25})`;
-      ctx.fillRect(0, 0, this.width, this.height);
-    }
-  }
-
-  animate() {
-    this.update();
-    this.draw();
-    requestAnimationFrame(() => this.animate());
-  }
-}
-
-// Global instance
-window.SpaceEngineInstance = null;
-window.addEventListener('DOMContentLoaded', () => {
-  window.SpaceEngineInstance = new SpaceEngine('space-canvas');
-});
+  resize();
+  requestAnimationFrame(frame);
+})();
